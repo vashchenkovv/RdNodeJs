@@ -6,64 +6,54 @@ import {
   Get,
   NotFoundException,
   Param,
-  ParseIntPipe,
   Patch,
   Post,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-users.dto';
-import { User } from './interfaces/user.interface';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  users: User[] = [];
-  id = 0;
+  constructor(
+    private usersService: UsersService
+  ) {}
 
   @Get()
   getAll() {
-    return this.users;
+    return this.usersService.getAll();
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    const oneUser = this.users.find((user) => user.id === id);
+  findOne(@Param('id') id: string) {
+    const oneUser = this.usersService.findOntByID(id);
     if (!oneUser) throw new NotFoundException('User not found');
     return oneUser;
   }
 
   @Post()
   create(@Body() createUser: CreateUserDto) {
-    const existingUser = this.users.find(
-      (user) => user.email === createUser.email,
-    );
+    const existingUser = this.usersService.findOntByEmail(createUser.email);
 
     if (existingUser)
       throw new ConflictException('A user with this email already exists');
 
-    const newUser: User = {
-      id: ++this.id,
-      name: createUser.name,
-      email: createUser.email,
-    };
-
-    this.users.push(newUser);
+    const newUser = this.usersService.addUser(createUser);
     return newUser;
   }
 
   @Patch(':id')
   update(
-    @Param('id', ParseIntPipe) id: number,
+    @Param('id') id: string,
     @Body() updateUser: UpdateUserDto,
   ) {
-    const userIndex = this.users.findIndex((user) => user.id === id);
-    if (userIndex === -1) throw new NotFoundException('User not found');
-
-    this.users[userIndex] = { ...this.users[userIndex], ...updateUser };
-    return this.users[userIndex];
+    const user = this.usersService.updateUser(id, updateUser);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
   @Delete(':id')
-  delete(@Param('id', ParseIntPipe) id: number) {
-    this.users = this.users.filter((user) => user.id !== id);
+  delete(@Param('id') id: string) {
+    this.usersService.deleteUser(id);
   }
 }
