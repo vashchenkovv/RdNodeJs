@@ -16,7 +16,7 @@ export class UsersService {
         this.createIdStrategy = this.configService.get('CREATE_IDENTIFICATION_STRATEGY') ?? 'increment'
     }
 
-    findOntByID(id: string): User | undefined {
+    findOntByID(id: string | number): User | undefined {
         return this.users.find((user) => user.id === id);
     }
 
@@ -37,14 +37,14 @@ export class UsersService {
         return newUse;
     }
 
-    updateUser(id: string, user: Pick<User, "name" | "email">): User | null {
+    updateUser(id: string | number, user: Pick<User, "name" | "email">): User | null {
         const userIndex = this.users.findIndex(user => user.id === id);
         if (userIndex === -1) return null;
         this.users[userIndex] = {...this.users[userIndex], ...user};
         return this.users[userIndex];
     }
 
-    deleteUser(id: string): void {
+    deleteUser(id: string | number): void {
         this.users = this.users.filter(user => user.id !== id);
     }
 
