@@ -1,10 +1,8 @@
 import {
   Body,
-  ConflictException,
   Controller,
   Delete,
   Get,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -15,9 +13,7 @@ import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {
-  constructor(
-    private usersService: UsersService
-  ) {}
+  constructor(private usersService: UsersService) {}
 
   @Get()
   getAll() {
@@ -26,34 +22,21 @@ export class UsersController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    const oneUser = this.usersService.findOntByID(id);
-    if (!oneUser) throw new NotFoundException('User not found');
-    return oneUser;
+    return this.usersService.findOntByID(id);
   }
 
   @Post()
   create(@Body() createUser: CreateUserDto) {
-    const existingUser = this.usersService.findOntByEmail(createUser.email);
-
-    if (existingUser)
-      throw new ConflictException('A user with this email already exists');
-
-    const newUser = this.usersService.addUser(createUser);
-    return newUser;
+    return this.usersService.addUser(createUser);
   }
 
   @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateUser: UpdateUserDto,
-  ) {
-    const user = this.usersService.updateUser(id, updateUser);
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+  update(@Param('id') id: string, @Body() updateUser: UpdateUserDto) {
+    return this.usersService.updateUser(id, updateUser);
   }
 
   @Delete(':id')
   delete(@Param('id') id: string) {
-    this.usersService.deleteUser(id);
+    return this.usersService.deleteUser(id);
   }
 }

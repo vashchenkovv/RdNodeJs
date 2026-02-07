@@ -1,55 +1,51 @@
-import { Injectable } from '@nestjs/common';
-import { User } from './interfaces/user.interface';
-import { v4 as uuidv4 } from 'uuid';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { User } from './user.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
-    private users: User[] = [];
-    private createIdStrategy: string;
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+  ) {}
 
-    static userId = 0;
+  getAll(): Promise<User[]> {
+    return this.usersRepository.find();
+  }
 
-    constructor(
-        private configService: ConfigService
-    ) {
-        this.createIdStrategy = this.configService.get('CREATE_IDENTIFICATION_STRATEGY') ?? 'increment'
-    }
+  findOntByID(id: string): Promise<User | null> {
+    return this.usersRepository.findOneBy({ id });
+  }
 
-    findOntByID(id: string | number): User | undefined {
-        return this.users.find((user) => user.id === id);
-    }
+  findOntByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOneBy({ email });
+  }
 
-    findOntByEmail(email: string): User | undefined {
-        return this.users.find((user) => user.email === email);
-    }
+  async deleteUser(id: string): Promise<void> {
+    await this.usersRepository.delete(id);
+  }
 
-    getAll(): User[] {
-        return this.users;
-    }
+  async addUser(user: Pick<User, 'name' | 'email'>): Promise<User> {
+    const existUser = await this.findOntByEmail(user.email);
+    if (existUser) return existUser;
 
-    addUser(user: Pick<User, "name" | "email">): User {
-        const newUse: User =  {
-            ...user,
-            id: this.createUserID()
-        };
-        this.users.push(newUse);
-        return newUse;
-    }
+    const newUser = this.usersRepository.create({
+      name: user.name,
+      email: user.email,
+    });
 
-    updateUser(id: string | number, user: Pick<User, "name" | "email">): User | null {
-        const userIndex = this.users.findIndex(user => user.id === id);
-        if (userIndex === -1) return null;
-        this.users[userIndex] = {...this.users[userIndex], ...user};
-        return this.users[userIndex];
-    }
+    return this.usersRepository.save(newUser);
+  }
 
-    deleteUser(id: string | number): void {
-        this.users = this.users.filter(user => user.id !== id);
-    }
-
-    createUserID(): number | string {
-        if (this.createIdStrategy === 'uuid') return  uuidv4();
-        return ++UsersService.userId;
-    }
+  async updateUser(
+    id: string,
+    user: Pick<User, 'name' | 'email'>,
+  ): Promise<User> {
+    const existUser = await this.findOntByID(id);
+    if (!existUser) throw new NotFoundException(`User not exists`);
+    existUser.name = user.name;
+    existUser.email = user.email;
+    return this.usersRepository.save(existUser);
+  }
 }
