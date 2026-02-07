@@ -1,8 +1,11 @@
+import { Order } from 'src/orders/order.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -18,6 +21,10 @@ export class User {
 
   @Column({ type: 'varchar', length: 320 })
   email: string;
+
+  @OneToMany(() => Order, (order) => order.user)
+  @JoinColumn({ name: 'order_id' })
+  orders: Order[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
