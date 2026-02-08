@@ -1,0 +1,109 @@
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
+import { Order } from './order.entity';
+import { OrderItem } from './order-item.entity';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { Product } from 'src/products/product.entity';
+import { User } from 'src/users/user.entity';
+
+@Injectable()
+export class OrdersService {
+  constructor(
+    private dataSource: DataSource,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
+
+  async creteOrder(createOrderDto: CreateOrderDto): Promise<Order | null> {
+    const user = await this.userRepository.findOneBy({
+      email: createOrderDto.userEmail,
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    if (createOrderDto.idempotencyKey) {
+      const existOrder = await this.orderRepository.findOne({
+        where: { idempotencyKey: createOrderDto.idempotencyKey },
+        relations: { user: true, items: { product: true } },
+      });
+
+      if (existOrder) return existOrder;
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const _orderRepository = queryRunner.manager.getRepository(Order);
+      const _orderItemRepository = queryRunner.manager.getRepository(OrderItem);
+      const _productRepository = queryRunner.manager.getRepository(Product);
+
+      const productIds = [
+        ...new Set(createOrderDto.items.map((item) => item.productId)),
+      ];
+
+      const products = await _productRepository
+        .createQueryBuilder('product')
+        .where('product.id IN (:...ids)', { ids: productIds })
+        .setLock('pessimistic_write')
+        .getMany();
+
+      const productsById = new Map(
+        products.map((product) => [product.id, product]),
+      );
+
+      for (const item of createOrderDto.items) {
+        const product = productsById.get(item.productId);
+        if (!product) throw new NotFoundException('Product not found');
+        if (!product.isActive)
+          throw new ConflictException(
+            `The product ${product.title} is not available`,
+          );
+        if (product.stock < item.quantity)
+          throw new ConflictException('Not enough goods in stock');
+        product.stock -= item.quantity;
+      }
+
+      await _productRepository.save([...productsById.values()]);
+
+      const order = _orderRepository.create({
+        user: user,
+        idempotencyKey: createOrderDto.idempotencyKey ?? null,
+      });
+
+      await _orderRepository.save(order);
+
+      const orderItems = createOrderDto.items.map((item) => {
+        return _orderItemRepository.create({
+          order,
+          product: productsById.get(item.productId),
+          quantity: item.quantity,
+          priceSnapshot: item.price.toFixed(2),
+        });
+      });
+
+      await _orderItemRepository.save(orderItems);
+
+      await queryRunner.commitTransaction();
+
+      const createdOrder = await this.orderRepository.findOne({
+        where: { id: order.id },
+        relations: { user: true, items: { product: true } },
+      });
+
+      return createdOrder;
+    } catch (e) {
+      await queryRunner.rollbackTransaction();
+      throw e;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+}
