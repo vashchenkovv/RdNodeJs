@@ -32,7 +32,6 @@ export class Order {
   user: User;
 
   @OneToMany(() => OrderItem, (item) => item.order)
-  @JoinColumn({ name: 'order_item_id' })
   items: OrderItem[];
 
   @Column({

@@ -4,7 +4,6 @@ import {
   CreateDateColumn,
   Entity,
   Index,
-  JoinColumn,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -23,7 +22,6 @@ export class User {
   email: string;
 
   @OneToMany(() => Order, (order) => order.user)
-  @JoinColumn({ name: 'order_id' })
   orders: Order[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })

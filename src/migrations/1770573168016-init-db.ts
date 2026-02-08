@@ -1,7 +1,7 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddProductOrderOrderItems1770482787847 implements MigrationInterface {
-  name = 'AddProductOrderOrderItems1770482787847';
+export class InitDb1770573168016 implements MigrationInterface {
+  name = 'InitDb1770573168016';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
@@ -14,22 +14,16 @@ export class AddProductOrderOrderItems1770482787847 implements MigrationInterfac
       `CREATE TABLE "order_items" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "quantity" integer NOT NULL, "price_snapshot" numeric(12,2) NOT NULL, "order_id" uuid, "product_id" uuid, CONSTRAINT "PK_005269d8574e6fac0493715c308" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE INDEX "IDX_order_items_product_id" ON "order_items" ("product_id") `,
-    );
-    await queryRunner.query(
-      `CREATE INDEX "IDX_order_items_order_id" ON "order_items" ("order_id") `,
-    );
-    await queryRunner.query(
       `CREATE TYPE "public"."orders_status" AS ENUM('CREATED', 'PAID', 'CANCELLED')`,
     );
     await queryRunner.query(
-      `CREATE TABLE "orders" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "status" "public"."orders_status" NOT NULL DEFAULT 'CREATED', "idempotency_key" character varying(120), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "user_id" uuid, CONSTRAINT "PK_710e2d4957aa5878dfe94e4ac2f" PRIMARY KEY ("id"))`,
+      `CREATE TABLE "orders" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "status" "public"."orders_status" NOT NULL DEFAULT 'CREATED', "idempotency_key" character varying(120), "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "user_id" uuid, CONSTRAINT "UQ_59d6b7756aeb6cbb43a093d15a1" UNIQUE ("idempotency_key"), CONSTRAINT "PK_710e2d4957aa5878dfe94e4ac2f" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE INDEX "IDX_orders_created_at" ON "orders" ("created_at") `,
+      `CREATE TABLE "users" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "name" character varying(250) NOT NULL, "email" character varying(320) NOT NULL, "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), CONSTRAINT "PK_a3ffb1c0c8416b9fc6f907b7433" PRIMARY KEY ("id"))`,
     );
     await queryRunner.query(
-      `CREATE INDEX "IDX_orders_user_id" ON "orders" ("user_id") `,
+      `CREATE UNIQUE INDEX "IDX_users_email_unique" ON "users" ("email") `,
     );
     await queryRunner.query(
       `ALTER TABLE "order_items" ADD CONSTRAINT "FK_145532db85752b29c57d2b7b1f1" FOREIGN KEY ("order_id") REFERENCES "orders"("id") ON DELETE CASCADE ON UPDATE NO ACTION`,
@@ -52,12 +46,10 @@ export class AddProductOrderOrderItems1770482787847 implements MigrationInterfac
     await queryRunner.query(
       `ALTER TABLE "order_items" DROP CONSTRAINT "FK_145532db85752b29c57d2b7b1f1"`,
     );
-    await queryRunner.query(`DROP INDEX "public"."IDX_orders_user_id"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_orders_created_at"`);
+    await queryRunner.query(`DROP INDEX "public"."IDX_users_email_unique"`);
+    await queryRunner.query(`DROP TABLE "users"`);
     await queryRunner.query(`DROP TABLE "orders"`);
     await queryRunner.query(`DROP TYPE "public"."orders_status"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_order_items_order_id"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_order_items_product_id"`);
     await queryRunner.query(`DROP TABLE "order_items"`);
     await queryRunner.query(`DROP INDEX "public"."IDX_products_title_unique"`);
     await queryRunner.query(`DROP TABLE "products"`);

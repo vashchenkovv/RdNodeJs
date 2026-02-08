@@ -5,11 +5,20 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { Order } from './order.entity';
+import { Order, OrderStatus } from './order.entity';
 import { OrderItem } from './order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Product } from 'src/products/product.entity';
 import { User } from 'src/users/user.entity';
+
+export type ListOrdersInput = {
+  userId?: string;
+  status?: OrderStatus;
+  from?: Date;
+  to?: Date;
+  limit: number;
+  offset: number;
+};
 
 @Injectable()
 export class OrdersService {
@@ -105,5 +114,38 @@ export class OrdersService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  orderList(inputParam: ListOrdersInput): Promise<Order[]> {
+    const qb = this.orderRepository
+      .createQueryBuilder('o')
+      .leftJoinAndSelect('o.items', 'i')
+      .leftJoinAndSelect('i.product', 'p')
+      .leftJoinAndSelect('o.user', 'u')
+      .orderBy('o.createdAt', 'DESC')
+      .take(inputParam.limit)
+      .skip(inputParam.offset);
+
+    if (inputParam.userId) {
+      qb.andWhere('o.user_id = :userId', { userId: inputParam.userId });
+    }
+
+    if (inputParam.status) {
+      qb.andWhere('o.status = :status', { status: inputParam.status });
+    }
+
+    if (inputParam.from) {
+      qb.andWhere('o.createdAt >= :from', {
+        from: inputParam.from,
+      });
+    }
+
+    if (inputParam.to) {
+      qb.andWhere('o.createdAt <= :to', {
+        to: inputParam.to,
+      });
+    }
+
+    return qb.getMany();
   }
 }
