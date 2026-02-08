@@ -8,6 +8,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { OrderItem } from './order-item.entity';
@@ -21,6 +22,7 @@ export enum OrderStatus {
 @Entity('orders')
 @Index('IDX_orders_user_id', ['user'])
 @Index('IDX_orders_created_at', ['createdAt'])
+@Unique(['idempotencyKey'])
 export class Order {
   @PrimaryGeneratedColumn('uuid')
   id: string;
