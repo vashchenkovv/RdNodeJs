@@ -7,11 +7,14 @@ import { Repository } from 'typeorm';
 import {
   orderEntityToOrderType,
   orderItemEntityToOrderItemType,
+  productEntytyToProductType,
   userEntityToUserType,
 } from './uthils/maps.util';
 import { OrderType } from './types/order.type';
 import { UserType } from './types/user.type';
 import { OrderItemType } from './types/order-item.type';
+import { ProductType } from './types/product.type';
+import { Product } from 'src/products/product.entity';
 
 @Injectable()
 export class AppGraphQlService {
@@ -22,6 +25,8 @@ export class AppGraphQlService {
     private userRepository: Repository<User>,
     @InjectRepository(OrderItem)
     private orderItemRepository: Repository<OrderItem>,
+    @InjectRepository(Product)
+    private productRepository: Repository<Product>,
   ) {}
 
   async getAllOreders(): Promise<OrderType[] | null> {
@@ -41,8 +46,12 @@ export class AppGraphQlService {
   ): Promise<OrderItemType[] | null> {
     const entities = await this.orderItemRepository.find({
       where: { orderId },
-      relations: { product: true },
     });
     return entities ? entities.map(orderItemEntityToOrderItemType) : [];
+  }
+
+  async getProductByID(productId: string): Promise<ProductType | null> {
+    const entity = await this.productRepository.findOneBy({ id: productId });
+    return entity ? productEntytyToProductType(entity) : null;
   }
 }
