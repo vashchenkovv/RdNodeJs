@@ -15,6 +15,7 @@ import { UserType } from './types/user.type';
 import { OrderItemType } from './types/order-item.type';
 import { ProductType } from './types/product.type';
 import { Product } from 'src/products/product.entity';
+import { OrderArgsType } from './types/order-args.type';
 
 @Injectable()
 export class AppGraphQlService {
@@ -29,10 +30,37 @@ export class AppGraphQlService {
     private productRepository: Repository<Product>,
   ) {}
 
-  async getAllOreders(): Promise<OrderType[] | null> {
-    const entities = await this.orderRepository.find({
-      order: { createdAt: 'DESC' },
-    });
+  async getAllOreders(
+    orderArgsType: OrderArgsType,
+  ): Promise<OrderType[] | null> {
+    const limit = Math.max(1, Math.min(orderArgsType.limit ?? 20, 100));
+    const offset = Math.max(0, orderArgsType.offset ?? 0);
+
+    const qb = this.orderRepository
+      .createQueryBuilder('o')
+      .orderBy('o.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (orderArgsType.status) {
+      qb.andWhere('o.status = :status', { status: orderArgsType.status });
+    }
+
+    if (orderArgsType.dateFrom) {
+      const date: Date = new Date(orderArgsType.dateFrom);
+      if (date instanceof Date && !isNaN(date.getTime())) {
+        qb.andWhere('o.createdAt >= :from', { from: date.toISOString() });
+      }
+    }
+
+    if (orderArgsType.dateTo) {
+      const date: Date = new Date(orderArgsType.dateTo);
+      if (date instanceof Date && !isNaN(date.getTime())) {
+        qb.andWhere('o.createdAt <= :to', { to: orderArgsType.dateTo });
+      }
+    }
+
+    const entities = await qb.getMany();
     return entities ? entities.map(orderEntityToOrderType) : null;
   }
 

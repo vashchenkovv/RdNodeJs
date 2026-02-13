@@ -1,4 +1,5 @@
 import {
+  Args,
   Context,
   Parent,
   Query,
@@ -10,22 +11,26 @@ import { AppGraphQlService } from '../app-graph-ql.service';
 import { UserType } from '../types/user.type';
 import { OrderItemType } from '../types/order-item.type';
 import type { GraphQLContext } from '../loaders/loadersFactory';
+import { OrderArgsType } from '../types/order-args.type';
 
 @Resolver(() => OrderType)
 export class OrderResolver {
   constructor(private gqlService: AppGraphQlService) {}
 
   @Query(() => [OrderType], { nullable: true })
-  async orders(): Promise<OrderType[] | null> {
-    return this.gqlService.getAllOreders();
+  async orders(
+    @Args() orderArgsType: OrderArgsType,
+  ): Promise<OrderType[] | null> {
+    return this.gqlService.getAllOreders(orderArgsType);
   }
 
   @Query(() => [OrderType], { nullable: true })
   async ordersNaive(
+    @Args() orderArgsType: OrderArgsType,
     @Context() ctx: GraphQLContext,
   ): Promise<OrderType[] | null> {
     ctx.strategy = 'naive';
-    return this.gqlService.getAllOreders();
+    return this.gqlService.getAllOreders(orderArgsType);
   }
 
   @ResolveField(() => UserType, { nullable: true })
