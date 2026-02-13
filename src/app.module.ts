@@ -1,9 +1,17 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { UsersModule } from './users/users.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { OrdersModule } from './orders/orders.module';
 import { ProductsModule } from './products/products.module';
+import { AppGraphQlModule } from './app-graph-ql/app-graph-ql.module';
+import { RequestContextMiddleware } from './common/request-context.middleware';
+import { TypeOrmRequestContextLogger } from './common/typeorm-logger';
 
 @Module({
   imports: [
@@ -23,10 +31,20 @@ import { ProductsModule } from './products/products.module';
         database: configService.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true,
         synchronize: false,
+        logging: ['query'],
+        logger: new TypeOrmRequestContextLogger(),
       }),
     }),
+    AppGraphQlModule,
   ],
   controllers: [],
   providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes({
+      path: 'graphql',
+      method: RequestMethod.ALL,
+    });
+  }
+}

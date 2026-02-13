@@ -16,9 +16,15 @@ export class OrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ type: 'uuid', name: 'order_id' })
+  orderId: string;
+
   @ManyToOne(() => Order, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'order_id' })
   order: Order;
+
+  @Column({ type: 'uuid', name: 'product_id' })
+  productId: string;
 
   @ManyToOne(() => Product, (product) => product.orderItems, {
     onDelete: 'RESTRICT',
