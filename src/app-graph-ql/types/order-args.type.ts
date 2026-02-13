@@ -1,4 +1,4 @@
-import { ArgsType, Field, Int } from '@nestjs/graphql';
+import { ArgsType, Field, GraphQLISODateTime, Int } from '@nestjs/graphql';
 import { OrderStatus } from 'src/orders/order.entity';
 
 @ArgsType()
@@ -6,10 +6,10 @@ export class OrderArgsType {
   @Field(() => OrderStatus, { nullable: true })
   status?: OrderStatus;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => GraphQLISODateTime, { nullable: true })
   dateFrom?: string;
 
-  @Field(() => String, { nullable: true })
+  @Field(() => GraphQLISODateTime, { nullable: true })
   dateTo?: string;
 
   @Field(() => Int, { defaultValue: 20 })

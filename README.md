@@ -30,3 +30,6 @@ npm run start:dev
 - `POST api/users` create new user
 - `PATCH api/users/id` update user
 - `DELETE api/users/id` remove user
+
+## GraphQL
+- `/graphql`
