@@ -1,18 +1,25 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpStatus,
   InternalServerErrorException,
+  NotFoundException,
+  Param,
   ParseDatePipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ListOrdersInput, OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Order, OrderStatus } from './order.entity';
 import { parceLimit, parceOffset } from './utils';
+import { RolesGuard } from 'src/auth/roles.guard';
+import { Roles } from 'src/auth/roles.decorator';
 
+@UseGuards(RolesGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private ordersService: OrdersService) {}
@@ -60,5 +67,15 @@ export class OrdersController {
     };
 
     return this.ordersService.orderList(param);
+  }
+
+  @Roles('admin')
+  @Delete(':id')
+  async remove(@Param('id') id: string) {
+    const deleted = await this.ordersService.deleteById(id);
+    if (!deleted) {
+      throw new NotFoundException('Order not found');
+    }
+    return { ok: true };
   }
 }

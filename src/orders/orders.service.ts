@@ -148,4 +148,9 @@ export class OrdersService {
 
     return qb.getMany();
   }
+
+  async deleteById(orderId: string): Promise<boolean> {
+    const result = await this.orderRepository.delete({ id: orderId });
+    return (result.affected ?? 0) > 0;
+  }
 }
