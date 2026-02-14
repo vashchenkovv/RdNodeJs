@@ -31,5 +31,8 @@ npm run start:dev
 - `PATCH /users/id` update user
 - `DELETE /users/id` remove user
 
+- `POST /auth/login` login
+- `POST /auth/register` register new customer
+
 ## GraphQL
 - `/graphql`

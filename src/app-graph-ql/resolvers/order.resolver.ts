@@ -1,6 +1,7 @@
 import {
   Args,
   Context,
+  ID,
   Parent,
   Query,
   ResolveField,
@@ -12,6 +13,8 @@ import { UserType } from '../types/user.type';
 import { OrderItemType } from '../types/order-item.type';
 import type { GraphQLContext } from '../loaders/loadersFactory';
 import { OrderArgsType } from '../types/order-args.type';
+import { UseGuards } from '@nestjs/common';
+import { GqlAuthGuard } from 'src/auth/gql-auth.guard';
 
 @Resolver(() => OrderType)
 export class OrderResolver {
@@ -31,6 +34,15 @@ export class OrderResolver {
   ): Promise<OrderType[] | null> {
     ctx.strategy = 'naive';
     return this.gqlService.getAllOreders(orderArgsType);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(() => OrderType)
+  async order(
+    @Args('id', { type: () => ID }) id: string,
+    @Context() ctx: GraphQLContext,
+  ): Promise<OrderType | null> {
+    return this.gqlService.getOrderByID(id, ctx.req.user);
   }
 
   @ResolveField(() => UserType, { nullable: true })

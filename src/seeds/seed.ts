@@ -7,10 +7,11 @@ import { Order } from 'src/orders/order.entity';
 import { OrderItem } from 'src/orders/order-item.entity';
 import { Role } from 'src/users/roles.entity';
 import { ROLE_SCOPE } from 'src/auth/enums/role-scope.enum';
+import { ROLES } from 'src/auth/enums/roles.enum';
 
 const roleSeed: Role[] = [
   {
-    role: 'admin',
+    role: ROLES.ADMIN,
     scopes: [
       ROLE_SCOPE.ORDERS_ALL,
       ROLE_SCOPE.ORDERS_ITEM_ALL,
@@ -20,7 +21,7 @@ const roleSeed: Role[] = [
     isDefCustomerRole: false,
   },
   {
-    role: 'support',
+    role: ROLES.SUPPORT,
     scopes: [
       ROLE_SCOPE.USERS_READ,
       ROLE_SCOPE.ORDERS_READ,
@@ -30,17 +31,17 @@ const roleSeed: Role[] = [
     isDefCustomerRole: false,
   },
   {
-    role: 'accounter',
+    role: ROLES.ACCOUNTER,
     scopes: [ROLE_SCOPE.ORDERS_READ, ROLE_SCOPE.PRUDUCTS_READ],
     isDefCustomerRole: false,
   },
   {
-    role: 'manager',
+    role: ROLES.MANAGER,
     scopes: [ROLE_SCOPE.PRUDUCTS_ALL],
     isDefCustomerRole: false,
   },
   {
-    role: 'customer',
+    role: ROLES.CUSTOMER,
     scopes: [
       ROLE_SCOPE.USERS_READ,
       ROLE_SCOPE.PRUDUCTS_READ,
@@ -57,27 +58,27 @@ const userSeed: Partial<User>[] = [
   {
     name: 'James Smith',
     email: 'j.smith@example.com',
-    roles: ['admin'],
+    roles: [ROLES.ADMIN],
   },
   {
     name: 'Emma Johnson',
     email: 'emma.johnson@gmail.com',
-    roles: ['support'],
+    roles: [ROLES.SUPPORT],
   },
   {
     name: 'Michael Williams',
     email: 'm.williams@outlook.com',
-    roles: ['accounter'],
+    roles: [ROLES.ACCOUNTER],
   },
   {
     name: 'Sophia Brown',
     email: 's.brown@icloud.com',
-    roles: ['manager'],
+    roles: [ROLES.MANAGER],
   },
   {
     name: 'William Jones',
     email: 'william.jones@mail.com',
-    roles: ['customer'],
+    roles: [ROLES.CUSTOMER],
   },
 ];
 

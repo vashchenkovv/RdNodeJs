@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OrderItem } from 'src/orders/order-item.entity';
 import { Order } from 'src/orders/order.entity';
@@ -16,6 +16,8 @@ import { OrderItemType } from './types/order-item.type';
 import { ProductType } from './types/product.type';
 import { Product } from 'src/products/product.entity';
 import { OrderArgsType } from './types/order-args.type';
+import { AuthUser } from 'src/auth/types/auth.type';
+import { ROLES } from 'src/auth/enums/roles.enum';
 
 @Injectable()
 export class AppGraphQlService {
@@ -81,5 +83,30 @@ export class AppGraphQlService {
   async getProductByID(productId: string): Promise<ProductType | null> {
     const entity = await this.productRepository.findOneBy({ id: productId });
     return entity ? productEntytyToProductType(entity) : null;
+  }
+
+  async getOrderByID(
+    orderId: string,
+    user?: AuthUser,
+  ): Promise<OrderType | null> {
+    if (!user) throw new UnauthorizedException('Unkown user');
+
+    const isStaff = user?.roles?.some((role) =>
+      [ROLES.ACCOUNTER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPPORT].includes(
+        role as ROLES,
+      ),
+    );
+    if (isStaff) {
+      const order = await this.orderRepository.findOne({
+        where: { id: orderId },
+      });
+      return order ? orderEntityToOrderType(order) : null;
+    }
+
+    const ownOrder = await this.orderRepository.findOne({
+      where: { id: orderId, userId: user?.sub },
+    });
+
+    return ownOrder ? orderEntityToOrderType(ownOrder) : null;
   }
 }

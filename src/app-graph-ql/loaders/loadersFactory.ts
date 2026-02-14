@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Request } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { User } from '../../users/user.entity';
@@ -13,6 +14,7 @@ import {
 import { UserType } from '../types/user.type';
 import { OrderItemType } from '../types/order-item.type';
 import { ProductType } from '../types/product.type';
+import { AuthUser } from 'src/auth/types/auth.type';
 
 export type AppLoaders = {
   userByIdLoader: DataLoader<string, UserType | null>;
@@ -21,6 +23,7 @@ export type AppLoaders = {
 };
 
 export type GraphQLContext = {
+  req: Request & { user?: AuthUser };
   loaders: AppLoaders;
   strategy?: 'naive' | 'optimized';
 };

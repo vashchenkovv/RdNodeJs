@@ -24,7 +24,9 @@ import { OrderItemResolver } from './resolvers/order-item.resolver';
         path: '/graphql',
         graphiql: true,
         introspection: true,
-        context: () => ({
+        context: ({ req }) => ({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          req,
           loaders: loadersFactory.create(),
           strategy: 'optimized' as const,
         }),
