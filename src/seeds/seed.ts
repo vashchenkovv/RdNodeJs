@@ -5,27 +5,79 @@ import { Product } from 'src/products/product.entity';
 import { In } from 'typeorm';
 import { Order } from 'src/orders/order.entity';
 import { OrderItem } from 'src/orders/order-item.entity';
+import { Role } from 'src/users/roles.entity';
+import { ROLE_SCOPE } from 'src/auth/enums/role-scope.enum';
+
+const roleSeed: Role[] = [
+  {
+    role: 'admin',
+    scopes: [
+      ROLE_SCOPE.ORDERS_ALL,
+      ROLE_SCOPE.ORDERS_ITEM_ALL,
+      ROLE_SCOPE.PRUDUCTS_ALL,
+      ROLE_SCOPE.USERS_ALL,
+    ],
+    isDefCustomerRole: false,
+  },
+  {
+    role: 'support',
+    scopes: [
+      ROLE_SCOPE.USERS_READ,
+      ROLE_SCOPE.ORDERS_READ,
+      ROLE_SCOPE.ORDERS_DELETE,
+      ROLE_SCOPE.ORDERS_UPDATE,
+    ],
+    isDefCustomerRole: false,
+  },
+  {
+    role: 'accounter',
+    scopes: [ROLE_SCOPE.ORDERS_READ, ROLE_SCOPE.PRUDUCTS_READ],
+    isDefCustomerRole: false,
+  },
+  {
+    role: 'manager',
+    scopes: [ROLE_SCOPE.PRUDUCTS_ALL],
+    isDefCustomerRole: false,
+  },
+  {
+    role: 'customer',
+    scopes: [
+      ROLE_SCOPE.USERS_READ,
+      ROLE_SCOPE.PRUDUCTS_READ,
+      ROLE_SCOPE.ORDERS_READ,
+      ROLE_SCOPE.ORDERS_CREATE,
+      ROLE_SCOPE.ORDERS_ITEM_READ,
+      ROLE_SCOPE.ORDERS_ITEM_CREATE,
+    ],
+    isDefCustomerRole: true,
+  },
+];
 
 const userSeed: Partial<User>[] = [
   {
     name: 'James Smith',
     email: 'j.smith@example.com',
+    roles: ['admin'],
   },
   {
     name: 'Emma Johnson',
     email: 'emma.johnson@gmail.com',
+    roles: ['support'],
   },
   {
     name: 'Michael Williams',
     email: 'm.williams@outlook.com',
+    roles: ['accounter'],
   },
   {
     name: 'Sophia Brown',
     email: 's.brown@icloud.com',
+    roles: ['manager'],
   },
   {
     name: 'William Jones',
     email: 'william.jones@mail.com',
+    roles: ['customer'],
   },
 ];
 
@@ -99,11 +151,13 @@ async function seed(): Promise<void> {
 
   await dataSource.initialize();
 
+  const roleRepository = dataSource.getRepository(Role);
   const usersRepository = dataSource.getRepository(User);
   const productRepository = dataSource.getRepository(Product);
   const orderRepository = dataSource.getRepository(Order);
   const orderItemRepository = dataSource.getRepository(OrderItem);
 
+  await roleRepository.upsert(roleSeed, ['role']);
   await usersRepository.upsert(userSeed, ['email']);
   await productRepository.upsert(productSeed, ['title']);
 
