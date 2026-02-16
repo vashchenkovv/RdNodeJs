@@ -2,7 +2,6 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -97,6 +96,8 @@ export class FilesService {
         sizeBytes: saved.sizeBytes,
       });
 
+      await queryRunner.commitTransaction();
+
       return {
         fileId: saved.id,
         status: saved.status,
@@ -110,7 +111,8 @@ export class FilesService {
         publicUrl: this.s3Service.buildPublicUrl(saved.objectKey),
       };
     } catch (err) {
-      throw new InternalServerErrorException(err);
+      await queryRunner.rollbackTransaction();
+      throw err;
     } finally {
       await queryRunner.release();
     }
