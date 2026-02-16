@@ -13,6 +13,7 @@ import { AppGraphQlModule } from './app-graph-ql/app-graph-ql.module';
 import { RequestContextMiddleware } from './common/request-context.middleware';
 import { TypeOrmRequestContextLogger } from './common/typeorm-logger';
 import { AuthModule } from './auth/auth.module';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     AppGraphQlModule,
     AuthModule,
+    FilesModule,
   ],
   controllers: [],
   providers: [],

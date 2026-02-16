@@ -6,12 +6,14 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './user.entity';
 import { Repository } from 'typeorm';
+import { FilesService } from 'src/files/files.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private readonly filesService: FilesService,
   ) {}
 
   getAll(): Promise<User[]> {
@@ -52,5 +54,25 @@ export class UsersService {
     existUser.name = user.name;
     existUser.email = user.email;
     return this.usersRepository.save(existUser);
+  }
+
+  async setAvatar(
+    userId: string,
+    fileId: string,
+  ): Promise<{ userId: string; avatarFileId: string; avatarUrl: string }> {
+    const user = await this.usersRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const file = await this.filesService.getOwnedFile(fileId, userId);
+    user.avatarFileId = file.id;
+    await this.usersRepository.save(user);
+
+    return {
+      userId: user.id,
+      avatarFileId: file.id,
+      avatarUrl: this.filesService.buildPublicUrl(file.objectKey),
+    };
   }
 }

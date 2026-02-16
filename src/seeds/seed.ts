@@ -8,6 +8,7 @@ import { OrderItem } from 'src/orders/order-item.entity';
 import { Role } from 'src/users/roles.entity';
 import { ROLE_SCOPE } from 'src/auth/enums/role-scope.enum';
 import { ROLES } from 'src/auth/enums/roles.enum';
+import * as bcrypt from 'bcryptjs';
 
 const roleSeed: Role[] = [
   {
@@ -17,6 +18,7 @@ const roleSeed: Role[] = [
       ROLE_SCOPE.ORDERS_ITEM_ALL,
       ROLE_SCOPE.PRUDUCTS_ALL,
       ROLE_SCOPE.USERS_ALL,
+      ROLE_SCOPE.FILE_ALL,
     ],
     isDefCustomerRole: false,
   },
@@ -27,17 +29,22 @@ const roleSeed: Role[] = [
       ROLE_SCOPE.ORDERS_READ,
       ROLE_SCOPE.ORDERS_DELETE,
       ROLE_SCOPE.ORDERS_UPDATE,
+      ROLE_SCOPE.FILE_READ,
     ],
     isDefCustomerRole: false,
   },
   {
     role: ROLES.ACCOUNTER,
-    scopes: [ROLE_SCOPE.ORDERS_READ, ROLE_SCOPE.PRUDUCTS_READ],
+    scopes: [
+      ROLE_SCOPE.ORDERS_READ,
+      ROLE_SCOPE.PRUDUCTS_READ,
+      ROLE_SCOPE.FILE_READ,
+    ],
     isDefCustomerRole: false,
   },
   {
     role: ROLES.MANAGER,
-    scopes: [ROLE_SCOPE.PRUDUCTS_ALL],
+    scopes: [ROLE_SCOPE.PRUDUCTS_ALL, ROLE_SCOPE.FILE_ALL],
     isDefCustomerRole: false,
   },
   {
@@ -49,36 +56,47 @@ const roleSeed: Role[] = [
       ROLE_SCOPE.ORDERS_CREATE,
       ROLE_SCOPE.ORDERS_ITEM_READ,
       ROLE_SCOPE.ORDERS_ITEM_CREATE,
+      ROLE_SCOPE.FILE_UPLOAD,
+      ROLE_SCOPE.FILE_READ,
     ],
     isDefCustomerRole: true,
   },
 ];
 
-const userSeed: Partial<User>[] = [
+class UserSeed extends User {
+  password: string;
+}
+
+const userTpl: Partial<UserSeed>[] = [
   {
     name: 'James Smith',
     email: 'j.smith@example.com',
     roles: [ROLES.ADMIN],
+    password: 'password',
   },
   {
     name: 'Emma Johnson',
     email: 'emma.johnson@gmail.com',
     roles: [ROLES.SUPPORT],
+    password: 'password',
   },
   {
     name: 'Michael Williams',
     email: 'm.williams@outlook.com',
     roles: [ROLES.ACCOUNTER],
+    password: 'password',
   },
   {
     name: 'Sophia Brown',
     email: 's.brown@icloud.com',
     roles: [ROLES.MANAGER],
+    password: 'password',
   },
   {
     name: 'William Jones',
     email: 'william.jones@mail.com',
     roles: [ROLES.CUSTOMER],
+    password: 'password',
   },
 ];
 
@@ -157,6 +175,13 @@ async function seed(): Promise<void> {
   const productRepository = dataSource.getRepository(Product);
   const orderRepository = dataSource.getRepository(Order);
   const orderItemRepository = dataSource.getRepository(OrderItem);
+
+  const userSeed: Partial<User>[] = userTpl.map((tpl) => ({
+    name: tpl.name,
+    email: tpl.email,
+    roles: tpl.roles,
+    passwordHash: tpl.password ? bcrypt.hashSync(tpl.password, 10) : null,
+  }));
 
   await roleRepository.upsert(roleSeed, ['role']);
   await usersRepository.upsert(userSeed, ['email']);

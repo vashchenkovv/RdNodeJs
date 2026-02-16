@@ -22,4 +22,9 @@ export enum ROLE_SCOPE {
   PRUDUCTS_READ = 'products:read',
   PRUDUCTS_UPDATE = 'products:update',
   PRUDUCTS_DELETE = 'products:delete',
+
+  FILE_ALL = 'file:all',
+  FILE_UPLOAD = 'file:upload',
+  FILE_READ = 'file:read',
+  FILE_DELETE = 'file:delete',
 }

@@ -18,6 +18,7 @@ import { Product } from 'src/products/product.entity';
 import { OrderArgsType } from './types/order-args.type';
 import { AuthUser } from 'src/auth/types/auth.type';
 import { ROLES } from 'src/auth/enums/roles.enum';
+import { isStuffUtil } from 'src/auth/utils/is-staff.util';
 
 @Injectable()
 export class AppGraphQlService {
@@ -91,11 +92,7 @@ export class AppGraphQlService {
   ): Promise<OrderType | null> {
     if (!user) throw new UnauthorizedException('Unkown user');
 
-    const isStaff = user?.roles?.some((role) =>
-      [ROLES.ACCOUNTER, ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPPORT].includes(
-        role as ROLES,
-      ),
-    );
+    const isStaff = isStuffUtil((user.roles ?? []) as ROLES[]);
     if (isStaff) {
       const order = await this.orderRepository.findOne({
         where: { id: orderId },

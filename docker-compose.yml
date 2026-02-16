@@ -11,6 +11,8 @@ services:
       - '${DB_PORT:-5432}:5432'
     volumes:
       - ecommerce:/var/lib/postgresql/data
+    networks:
+      - pgnetwork
 
   pgadmin:
     image: dpage/pgadmin4
@@ -22,9 +24,45 @@ services:
       - '8080:80'
     networks:
       - pgnetwork
+    depends_on:
+      - postgres
+
+  minio:
+    image: minio/minio:latest
+    container_name: ecommerce_mimino
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-minioadmin}
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - ecommerce_mimino:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: ecommerce_mimino_init
+    depends_on:
+      - minio
+    restart: 'no'
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:-minioadmin} ${AWS_SECRET_ACCESS_KEY:-minioadmin}; do
+        echo 'waiting for minio...';
+        sleep 2;
+      done;
+      mc mb --ignore-existing local/${AWS_S3_BUCKET:-ecommerce_private};
+      mc anonymous set none local/${AWS_S3_BUCKET:-eecommerce_private};
+      echo 'minio bucket is ready';
+      "
 
 volumes:
   ecommerce:
+  pgadmin:
+  ecommerce_mimino:
+  ecommerce_mimino_init:
 
 networks:
   pgnetwork:
