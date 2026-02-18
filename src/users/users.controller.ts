@@ -15,6 +15,8 @@ import { UsersService } from './users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { AttachFileDto } from 'src/files/dto/attach-file.dto';
 import { AuthUser } from 'src/auth/types/auth.type';
+import { Scopes } from 'src/auth/scopes.decorator';
+import { ROLE_SCOPE } from 'src/auth/enums/role-scope.enum';
 
 @UseGuards(JwtAuthGuard)
 @Controller('users')
@@ -42,6 +44,7 @@ export class UsersController {
   }
 
   @Patch('avatar')
+  @Scopes(ROLE_SCOPE.FILE_UPLOAD)
   async setAvatar(
     @Req() req: Request & { user?: AuthUser },
     @Body() attachFileDto: AttachFileDto,
