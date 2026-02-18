@@ -11,8 +11,8 @@ import { ClientS3Service } from './client-s3.service';
 import { AuthUser } from 'src/auth/types/auth.type';
 import { PresignFileDto } from './dto/presign-file.dto';
 import { randomUUID } from 'node:crypto';
-import { FilePublicDataMapper } from './utils/file-public-data.mapper';
 import { isOwnerOrStaffUtil } from './utils/is-owner-or-staff.util';
+import { PaublicFileRecord } from './types/paublic-file-record.type';
 
 export const ALLOWED_CONTENT_TYPES = [
   'image/jpeg',
@@ -128,7 +128,7 @@ export class FilesService {
     this.assertOwnerOrStaff(file, user);
 
     if (file.status === FileStatus.READY) {
-      return new FilePublicDataMapper(this.s3Service).map(file);
+      return this.getPaublicFileRecord(file);
     }
 
     const exists = await this.s3Service.objectExists(file.objectKey);
@@ -140,7 +140,7 @@ export class FilesService {
     file.completedAt = new Date();
     const saved = await this.filesRepository.save(file);
 
-    return new FilePublicDataMapper(this.s3Service).map(saved);
+    return this.getPaublicFileRecord(saved);
   }
 
   private assertOwnerOrStaff(file: FileRecord, user: AuthUser): void {
@@ -158,7 +158,7 @@ export class FilesService {
     if (!file) throw new NotFoundException('File not found');
 
     this.assertOwnerOrStaff(file, user);
-    return new FilePublicDataMapper(this.s3Service).map(file);
+    return this.getPaublicFileRecord(file);
   }
 
   async getOwnedFile(fileId: string, ownerUserId: string): Promise<FileRecord> {
@@ -175,5 +175,34 @@ export class FilesService {
       throw new BadRequestException('File upload is not completed');
 
     return file;
+  }
+
+  async getProductFile(fileId: string): Promise<FileRecord> {
+    const file = await this.filesRepository.findOne({
+      where: { id: fileId },
+    });
+
+    if (!file) throw new NotFoundException('File not found');
+
+    if (file.status !== FileStatus.READY)
+      throw new BadRequestException('File upload is not completed');
+
+    return file;
+  }
+
+  getPaublicFileRecord(file: FileRecord): PaublicFileRecord {
+    return {
+      id: file.id,
+      ownerUserId: file.ownerUserId,
+      status: file.status,
+      contentType: file.contentType,
+      sizeBytes: file.sizeBytes,
+      objectKey: file.objectKey,
+      bucket: file.bucket,
+      completedAt: file.completedAt,
+      createdAt: file.createdAt,
+      updatedAt: file.updatedAt,
+      publicUrl: this.s3Service.buildPublicUrl(file.objectKey),
+    };
   }
 }

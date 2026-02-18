@@ -42,7 +42,7 @@ export class UsersController {
   }
 
   @Patch('avatar')
-  async setMyAvatar(
+  async setAvatar(
     @Req() req: Request & { user?: AuthUser },
     @Body() attachFileDto: AttachFileDto,
   ) {

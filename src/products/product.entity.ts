@@ -1,9 +1,12 @@
+import { FileRecord } from 'src/files/file-record.entity';
 import { OrderItem } from 'src/orders/order-item.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   Index,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -29,6 +32,13 @@ export class Product {
 
   @OneToMany(() => OrderItem, (item) => item.product)
   orderItems: OrderItem[];
+
+  @Column({ type: 'uuid', name: 'product_file_id', nullable: true })
+  productFileId: string | null;
+
+  @ManyToOne(() => FileRecord, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'avatar_file_id' })
+  productFile: FileRecord | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;

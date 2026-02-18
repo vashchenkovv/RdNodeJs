@@ -13,7 +13,7 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
-    private readonly filesService: FilesService,
+    private filesService: FilesService,
   ) {}
 
   getAll(): Promise<User[]> {

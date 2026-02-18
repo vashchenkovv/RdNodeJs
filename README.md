@@ -26,13 +26,20 @@ npm run start:dev
 - `GET /orders` lists orders with filters
 
 - `GET /users` get list of users
-- `GET /users/id` get one user by ID
+- `GET /users/:id` get one user by ID
 - `POST /users` create new user
-- `PATCH /users/id` update user
-- `DELETE /users/id` remove user
+- `PATCH /users/:id` update user
+- `DELETE /users/:id` remove user
+- `PATHC /users/avatar` Set user avatar
 
 - `POST /auth/login` login
 - `POST /auth/register` register new customer
+
+- `POST /files/presign` presign file
+- `POST /files/complete` file uploaded
+- `GET /files/:id` get file meta data
+
+- `PATHC /pruduct/image` Set product image
 
 ## GraphQL
 - `/graphql`
