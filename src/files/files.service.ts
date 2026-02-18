@@ -199,9 +199,6 @@ export class FilesService {
       sizeBytes: file.sizeBytes,
       objectKey: file.objectKey,
       bucket: file.bucket,
-      completedAt: file.completedAt,
-      createdAt: file.createdAt,
-      updatedAt: file.updatedAt,
       publicUrl: this.s3Service.buildPublicUrl(file.objectKey),
     };
   }

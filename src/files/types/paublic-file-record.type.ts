@@ -8,8 +8,5 @@ export type PaublicFileRecord = {
   sizeBytes: number;
   objectKey: string;
   bucket: string;
-  completedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
   publicUrl: string;
 };

@@ -15,6 +15,11 @@ export enum FileStatus {
   READY = 'ready',
 }
 
+export enum FileAccess {
+  PRIVATE = 'private',
+  PUBLIC = 'public ',
+}
+
 @Entity('files')
 @Index('IDX_files_owner_user_id', ['ownerUserId'])
 @Index('IDX_files_status', ['status'])
@@ -48,6 +53,13 @@ export class FileRecord {
     default: FileStatus.PENDING,
   })
   status: FileStatus;
+
+  @Column({
+    type: 'enum',
+    enum: FileAccess,
+    default: FileAccess.PRIVATE,
+  })
+  visibility: FileStatus;
 
   @Column({ type: 'timestamptz', name: 'completed_at', nullable: true })
   completedAt: Date | null;
