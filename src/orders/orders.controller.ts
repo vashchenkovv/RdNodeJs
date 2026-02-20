@@ -8,18 +8,23 @@ import {
   NotFoundException,
   Param,
   ParseDatePipe,
+  Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import { ListOrdersInput, OrdersService } from './orders.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, UpdateOrderStatusDto } from './dto/create-order.dto';
 import { Order, OrderStatus } from './order.entity';
 import { parceLimit, parceOffset } from './utils';
 import { RolesGuard } from 'src/auth/roles.guard';
 import { Roles } from 'src/auth/roles.decorator';
+import { ROLES } from 'src/auth/enums/roles.enum';
+import { AuthUser } from 'src/auth/types/auth.type';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
-@UseGuards(RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('orders')
 export class OrdersController {
   constructor(private ordersService: OrdersService) {}
@@ -69,7 +74,21 @@ export class OrdersController {
     return this.ordersService.orderList(param);
   }
 
-  @Roles('admin')
+  @Roles(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPPORT)
+  @Patch(':id/status')
+  async updateStatus(
+    @Req() req: Request & { user?: AuthUser },
+    @Param('id') id: string,
+    @Body() updateOrderStatusDto: UpdateOrderStatusDto,
+  ) {
+    return this.ordersService.updateStatus(
+      id,
+      updateOrderStatusDto.status,
+      req.user as AuthUser,
+    );
+  }
+
+  @Roles(ROLES.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string) {
     const deleted = await this.ordersService.deleteById(id);

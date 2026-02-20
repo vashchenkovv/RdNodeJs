@@ -14,13 +14,11 @@ import { RequestContextMiddleware } from './common/request-context.middleware';
 import { TypeOrmRequestContextLogger } from './common/typeorm-logger';
 import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
+import { RealtimeModule } from './realtime/realtimemodule';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    UsersModule,
-    OrdersModule,
-    ProductsModule,
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,7 +37,11 @@ import { FilesModule } from './files/files.module';
     }),
     AppGraphQlModule,
     AuthModule,
+    UsersModule,
+    OrdersModule,
+    ProductsModule,
     FilesModule,
+    RealtimeModule,
   ],
   controllers: [],
   providers: [],

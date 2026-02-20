@@ -53,6 +53,9 @@ export class Order {
   })
   idempotencyKey: string | null;
 
+  @Column({ type: 'integer', name: 'status_version', default: 0 })
+  statusVersion: number;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 

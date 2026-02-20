@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +11,10 @@ import { OrderItem } from './order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { Product } from 'src/products/product.entity';
 import { User } from 'src/users/user.entity';
+import { AuthUser } from 'src/auth/types/auth.type';
+import { isStuffUtil } from 'src/auth/utils/is-staff.util';
+import { ROLES } from 'src/auth/enums/roles.enum';
+import { OrdersEventsService } from './orders-events.service';
 
 export type ListOrdersInput = {
   userId?: string;
@@ -28,6 +33,7 @@ export class OrdersService {
     private orderRepository: Repository<Order>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    private ordersEventsService: OrdersEventsService,
   ) {}
 
   async creteOrder(createOrderDto: CreateOrderDto): Promise<Order | null> {
@@ -152,5 +158,60 @@ export class OrdersService {
   async deleteById(orderId: string): Promise<boolean> {
     const result = await this.orderRepository.delete({ id: orderId });
     return (result.affected ?? 0) > 0;
+  }
+
+  async updateStatus(
+    orderId: string,
+    status: OrderStatus,
+    user: AuthUser,
+  ): Promise<Order> {
+    if (!isStuffUtil(user.roles as ROLES[])) {
+      throw new ForbiddenException('Only staff can change order status');
+    }
+
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    if (order.status === status) {
+      return order;
+    }
+
+    order.status = status;
+    order.statusVersion = (order.statusVersion ?? 0) + 1;
+    const saved = await this.orderRepository.save(order);
+
+    this.ordersEventsService.publishStatusChanged({
+      orderId: saved.id,
+      status: saved.status,
+      version: saved.statusVersion,
+      ts: Date.now(),
+    });
+
+    return saved;
+  }
+
+  async canSubscribeToOrder(orderId: string, user: AuthUser): Promise<void> {
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    this.canAccessOrder(order, user);
+  }
+
+  private canAccessOrder(order: Order, user: AuthUser): void {
+    if (isStuffUtil(user.roles as ROLES[])) {
+      return;
+    }
+
+    if (order.userId !== user.sub) {
+      throw new ForbiddenException('Access denied');
+    }
   }
 }
