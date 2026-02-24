@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    env_file:
+      - .env.prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME:-db}
+    volumes:
+      - db:/var/lib/postgresql/data
+
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:?err}
+      MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:?err}
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+    volumes:
+      - minio:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: minio-init
+    depends_on:
+      - minio
+    restart: 'no'
+    env_file:
+      - .env.prod
+    entrypoint: >
+      /bin/sh -c " until mc alias set local http://minio:9000 ${AWS_ACCESS_KEY_ID:?err} ${AWS_SECRET_ACCESS_KEY:?err}; do
+        echo 'waiting for minio...';
+        sleep 2;
+      done; mc mb --ignore-existing local/${AWS_S3_BUCKET:?err}; mc anonymous set none local/${AWS_S3_BUCKET:?err}; echo 'minio bucket is ready'; "
+
+  my-app:
+    build:
+      target: prod
+    ports:
+      - "8080:3000"
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    depends_on:
+      - postgres
+      - minio
+
+  migrate:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env.prod
+    command: npm run db:migrate
+    restart: "no"
+    depends_on:
+      - postgres
+
+volumes:
+  minio:
+  db:

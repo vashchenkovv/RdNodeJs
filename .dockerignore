@@ -1,0 +1,16 @@
+**/node_modules
+**/dist
+**/test
+
+.env
+.env.example
+.env.prod
+.env.dev
+*.md
+*.yml
+
+.git
+.gitignore
+.prettierrc
+
+Dockerfile

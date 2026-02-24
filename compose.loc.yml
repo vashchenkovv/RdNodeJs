@@ -1,18 +1,18 @@
 services:
-  postgres:
+  dev-postgres:
     image: postgres:16
-    container_name: ecommerce
+    container_name: db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-ecommerce}
+      POSTGRES_DB: ${DB_NAME:-db}
     ports:
       - '${DB_PORT:-5432}:5432'
     volumes:
-      - ecommerce:/var/lib/postgresql/data
+      - ecommerce_db:/var/lib/postgresql/data
     networks:
-      - pgnetwork
+      - dev
 
   pgadmin:
     image: dpage/pgadmin4
@@ -23,7 +23,7 @@ services:
     ports:
       - '8080:80'
     networks:
-      - pgnetwork
+      - dev
     depends_on:
       - postgres
 
@@ -40,12 +40,16 @@ services:
       - '9001:9001'
     volumes:
       - ecommerce_mimino:/data
+    networks:
+      - dev
 
   minio-init:
     image: minio/mc:latest
     container_name: ecommerce_mimino_init
     depends_on:
       - minio
+    networks:
+      - dev
     restart: 'no'
     entrypoint: >
       /bin/sh -c "
@@ -59,11 +63,10 @@ services:
       "
 
 volumes:
-  ecommerce:
-  pgadmin:
+  ecommerce_db:
   ecommerce_mimino:
   ecommerce_mimino_init:
 
 networks:
-  pgnetwork:
+  dev:
     driver: bridge
