@@ -6,6 +6,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -18,6 +19,7 @@ export enum PaymentStatus {
 }
 
 @Entity('payments')
+@Unique('UQ_payments_order_id', ['orderId'])
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
   id: string;
