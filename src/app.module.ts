@@ -15,6 +15,7 @@ import { TypeOrmRequestContextLogger } from './common/typeorm-logger';
 import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
 import { RealtimeModule } from './realtime/realtimemodule';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { RealtimeModule } from './realtime/realtimemodule';
     ProductsModule,
     FilesModule,
     RealtimeModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [],

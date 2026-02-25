@@ -27,4 +27,10 @@ export enum ROLE_SCOPE {
   FILE_UPLOAD = 'file:upload',
   FILE_READ = 'file:read',
   FILE_DELETE = 'file:delete',
+
+  PAYMENT_ALL = 'payment:all',
+  PAYMENT_CREATE = 'payment:create',
+  PAYMENT_READ = 'payment:read',
+  PAYMENT_UPDATE = 'payment:update',
+  PAYMENT_DELETE = 'payment:delete',
 }
