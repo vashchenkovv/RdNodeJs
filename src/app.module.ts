@@ -16,6 +16,7 @@ import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
 import { RealtimeModule } from './realtime/realtimemodule';
 import { PaymentsModule } from './payments/payments.module';
+import { RabbitmqModule } from './rabbitmq/rabbitmq.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { PaymentsModule } from './payments/payments.module';
     FilesModule,
     RealtimeModule,
     PaymentsModule,
+    RabbitmqModule,
   ],
   controllers: [],
   providers: [],

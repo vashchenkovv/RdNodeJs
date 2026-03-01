@@ -30,8 +30,14 @@ export class OrdersController {
   constructor(private ordersService: OrdersService) {}
 
   @Post()
-  async createOrder(@Body() createOrderDto: CreateOrderDto): Promise<Order> {
-    const order = await this.ordersService.creteOrder(createOrderDto);
+  async createOrder(
+    @Body() createOrderDto: CreateOrderDto,
+    @Req() req: Request & { user?: AuthUser },
+  ): Promise<Order> {
+    const order = await this.ordersService.creteOrder(
+      createOrderDto,
+      req.user?.sub,
+    );
     if (!order) throw new InternalServerErrorException('Internal Server Error');
     return order;
   }

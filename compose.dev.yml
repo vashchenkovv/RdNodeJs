@@ -57,3 +57,7 @@ services:
     restart: "no"
     depends_on:
       - postgres
+
+  rabbitmq:
+    ports:
+      - '15673:15672'

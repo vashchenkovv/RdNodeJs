@@ -2,7 +2,7 @@
 1) Copy `.env.example` to `.env` and adjust values.
 2) Start database:
 ```
-docker compose up -d
+docker compose -f docker-compose.yml  up -d
 ```
 3) Install dependencies:
 ```

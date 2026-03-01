@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,6 +16,10 @@ import { AuthUser } from 'src/auth/types/auth.type';
 import { isStuffUtil } from 'src/auth/utils/is-staff.util';
 import { ROLES } from 'src/auth/enums/roles.enum';
 import { OrdersEventsService } from './orders-events.service';
+import { OrdersProcessMessage } from './types/orders-queue.type';
+import { RabbitmqService } from 'src/rabbitmq/rabbitmq.service';
+import { ProcessedMessage } from 'src/infrastructure/processed-message.entity';
+import { randomUUID } from 'node:crypto';
 
 export type ListOrdersInput = {
   userId?: string;
@@ -27,6 +32,8 @@ export type ListOrdersInput = {
 
 @Injectable()
 export class OrdersService {
+  private logger = new Logger(OrdersService.name);
+
   constructor(
     private dataSource: DataSource,
     @InjectRepository(Order)
@@ -34,9 +41,13 @@ export class OrdersService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private ordersEventsService: OrdersEventsService,
+    private rabbitmqService: RabbitmqService,
   ) {}
 
-  async creteOrder(createOrderDto: CreateOrderDto): Promise<Order | null> {
+  async creteOrder(
+    createOrderDto: CreateOrderDto,
+    userId?: string,
+  ): Promise<Order | null> {
     const user = await this.userRepository.findOneBy({
       email: createOrderDto.userEmail,
     });
@@ -108,10 +119,27 @@ export class OrdersService {
 
       await queryRunner.commitTransaction();
 
-      const createdOrder = await this.orderRepository.findOne({
+      const createdOrder: Order | null = await this.orderRepository.findOne({
         where: { id: order.id },
         relations: { user: true, items: { product: true } },
       });
+
+      this.logger.log('the order created');
+
+      if (createdOrder) {
+        this.logger.log('Send message to RaggitMQ');
+        const message: OrdersProcessMessage = {
+          messageId: randomUUID(),
+          orderId: createdOrder.id,
+          createdAt: new Date().toDateString(),
+          attempt: 1,
+          producer: userId ?? null,
+          eventName: 'Orders Process',
+        };
+        this.rabbitmqService.publishToQueue('orders.process', message, {
+          messageId: message.messageId,
+        });
+      }
 
       return createdOrder;
     } catch (e) {
@@ -213,5 +241,51 @@ export class OrdersService {
     if (order.userId !== user.sub) {
       throw new ForbiddenException('Access denied');
     }
+  }
+
+  async processFromQueue(message: OrdersProcessMessage): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      this.logger.log('Start process transaction');
+      const pmRepository = manager.getRepository(ProcessedMessage);
+
+      try {
+        const pm = pmRepository.create({
+          messageId: message.messageId,
+          orderId: message.orderId,
+          eventName: message.eventName,
+          processedAt: new Date().toISOString(),
+        });
+        await pmRepository.insert(pm);
+      } catch (err: any) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        this.logger.error('err', err);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (String(err?.code) === '23505') {
+          return;
+        }
+        throw err;
+      }
+
+      const orderRepository = manager.getRepository(Order);
+      const order = await orderRepository.findOne({
+        where: { id: message.orderId },
+      });
+      if (!order) {
+        throw new Error('Order not found');
+      }
+
+      order.status = OrderStatus.PROCESSED;
+      await orderRepository.save(order);
+
+      this.logger.log('The order updated');
+
+      this.logger.log('Notify about new status of the order');
+      this.ordersEventsService.publishStatusChanged({
+        orderId: order.id,
+        status: OrderStatus.PROCESSED,
+        version: 1,
+        ts: Date.now(),
+      });
+    });
   }
 }

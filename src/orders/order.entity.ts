@@ -14,9 +14,11 @@ import {
 import { OrderItem } from './order-item.entity';
 
 export enum OrderStatus {
+  PENDING = 'PENDING',
   CREATED = 'CREATED',
   PAID = 'PAID',
   CANCELLED = 'CANCELLED',
+  PROCESSED = 'PROCESSED',
 }
 
 @Entity('orders')
@@ -41,7 +43,7 @@ export class Order {
     type: 'enum',
     enum: OrderStatus,
     enumName: 'orders_status',
-    default: OrderStatus.CREATED,
+    default: OrderStatus.PENDING,
   })
   status: OrderStatus;
 

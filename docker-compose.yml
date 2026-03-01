@@ -62,6 +62,14 @@ services:
       echo 'minio bucket is ready';
       "
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: unless-stopped
+    ports:
+      - '5673:5672'
+      - '15673:15672'
+
 volumes:
   ecommerce_db:
   ecommerce_mimino:
