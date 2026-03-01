@@ -21,7 +21,7 @@ export class OrdersWorkerService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.rabbitmqService.consume('orders.process', async (msg, ch) => {
-      this.logger.log('Worked get message from RaggitMQ');
+      this.logger.log('RabbitMQ (WORKER): Worker get message from RaggitMQ');
       await this.handleMessage(msg, ch);
     });
   }
@@ -36,7 +36,7 @@ export class OrdersWorkerService implements OnApplicationBootstrap {
         msg.content.toString('utf-8'),
       ) as OrdersProcessMessage;
     } catch {
-      this.logger.warn('Invalid JSON');
+      this.logger.warn('RabbitMQ (WORKER): Invalid JSON');
       this.rabbitmqService.publishToQueue('orders.dlq', {
         raw: msg.content.toString('utf-8'),
       });
@@ -58,7 +58,7 @@ export class OrdersWorkerService implements OnApplicationBootstrap {
 
     if (attempt >= this.maxAttempts) {
       this.logger.log(
-        `Poison orderid: ${payload.orderId}, reached attempt limit: ${attempt}`,
+        `RabbitMQ (WORKER): Poison orderid: ${payload.orderId}, reached attempt limit: ${attempt}. Pass order to orders.dlq queue`,
       );
 
       this.rabbitmqService.publishToQueue('orders.dlq', {
@@ -69,15 +69,15 @@ export class OrdersWorkerService implements OnApplicationBootstrap {
       return;
     }
 
+    this.logger.log(
+      `RabbitMQ (WORKER): Retry orderid: ${payload.orderId}, messageId=${payload.messageId}, attempt: ${attempt + 1}`,
+    );
+
     this.rabbitmqService.publishToQueue('orders.process', {
       ...payload,
       attempt: attempt + 1,
     });
 
     channel.ack(msg);
-
-    this.logger.log(
-      `Retry orderid: ${payload.orderId}, messageId=${payload.messageId}, attempt: ${attempt + 1}`,
-    );
   }
 }

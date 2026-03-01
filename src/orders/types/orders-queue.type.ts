@@ -5,4 +5,5 @@ export type OrdersProcessMessage = {
   attempt: number;
   producer: string | null;
   eventName: string | null;
+  testIssue?: string | null;
 };

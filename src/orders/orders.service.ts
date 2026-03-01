@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -32,7 +33,7 @@ export type ListOrdersInput = {
 
 @Injectable()
 export class OrdersService {
-  private logger = new Logger(OrdersService.name);
+  protected logger = new Logger(OrdersService.name);
 
   constructor(
     private dataSource: DataSource,
@@ -41,7 +42,7 @@ export class OrdersService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private ordersEventsService: OrdersEventsService,
-    private rabbitmqService: RabbitmqService,
+    protected rabbitmqService: RabbitmqService,
   ) {}
 
   async creteOrder(
@@ -124,21 +125,17 @@ export class OrdersService {
         relations: { user: true, items: { product: true } },
       });
 
-      this.logger.log('the order created');
+      this.logger.log(
+        'RabbitMQ: the order have been created with PENDING status',
+      );
 
       if (createdOrder) {
-        this.logger.log('Send message to RaggitMQ');
-        const message: OrdersProcessMessage = {
-          messageId: randomUUID(),
-          orderId: createdOrder.id,
-          createdAt: new Date().toDateString(),
-          attempt: 1,
-          producer: userId ?? null,
-          eventName: 'Orders Process',
-        };
-        this.rabbitmqService.publishToQueue('orders.process', message, {
-          messageId: message.messageId,
-        });
+        this.publishToQueue(
+          createdOrder,
+          'Orders Process',
+          'orders.process',
+          userId,
+        );
       }
 
       return createdOrder;
@@ -147,6 +144,30 @@ export class OrdersService {
       throw e;
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  protected publishToQueue(
+    order: Order,
+    eventName: string,
+    queue: string,
+    userId?: string,
+  ): void {
+    if (order) {
+      this.logger.log(
+        `RabbitMQ: Create message and send it to RaggitMQ (queue: ${queue})`,
+      );
+      const message: OrdersProcessMessage = {
+        messageId: randomUUID(),
+        orderId: order.id,
+        createdAt: new Date().toDateString(),
+        attempt: 1,
+        producer: userId ?? null,
+        eventName,
+      };
+      this.rabbitmqService.publishToQueue(queue, message, {
+        messageId: message.messageId,
+      });
     }
   }
 
@@ -243,12 +264,18 @@ export class OrdersService {
     }
   }
 
+  getOne(id: string) {
+    return this.orderRepository.findOneBy({ id });
+  }
+
   async processFromQueue(message: OrdersProcessMessage): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      this.logger.log('Start process transaction');
+      this.logger.log('RabbitMQ (ORDER_SERVICE): Start process transaction');
       const pmRepository = manager.getRepository(ProcessedMessage);
 
       try {
+        this.logger.log('RabbitMQ (ORDER_SERVICE): CREAT ProcessedMessage');
+
         const pm = pmRepository.create({
           messageId: message.messageId,
           orderId: message.orderId,
@@ -258,12 +285,21 @@ export class OrdersService {
         await pmRepository.insert(pm);
       } catch (err: any) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        this.logger.error('err', err);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         if (String(err?.code) === '23505') {
+          this.logger.log(
+            'RabbitMQ (ORDER_SERVICE): ProcessedMessage already exist. Prevent duplicated process',
+          );
           return;
         }
         throw err;
+      }
+
+      if (message.testIssue === 'poison') {
+        this.logger.log(
+          `RabbitMQ (ORDER_SERVICE): Test issue: ${message.testIssue}`,
+        );
+
+        throw new BadRequestException('Test invalid data');
       }
 
       const orderRepository = manager.getRepository(Order);
@@ -277,9 +313,14 @@ export class OrdersService {
       order.status = OrderStatus.PROCESSED;
       await orderRepository.save(order);
 
-      this.logger.log('The order updated');
+      this.logger.log(
+        'RabbitMQ (ORDER_SERVICE): The order have been updated with PROCESSED statuse',
+      );
 
-      this.logger.log('Notify about new status of the order');
+      this.logger.log(
+        'RabbitMQ (ORDER_SERVICE): Notify about new status of the order',
+      );
+
       this.ordersEventsService.publishStatusChanged({
         orderId: order.id,
         status: OrderStatus.PROCESSED,

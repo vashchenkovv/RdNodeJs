@@ -94,6 +94,11 @@ export class OrdersController {
     );
   }
 
+  @Get(':id')
+  getOrder(@Param('id') id: string) {
+    return this.ordersService.getOne(id);
+  }
+
   @Roles(ROLES.ADMIN)
   @Delete(':id')
   async remove(@Param('id') id: string) {
