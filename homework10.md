@@ -7,19 +7,30 @@
 # Команды для создания образов
 - dev
 
-``` docker build --target dev -t my-app:dev .```
+``` docker build --target dev -t api:dev .```
 
 - prod
 
-``` docker build --target prod -t my-app:prod . ```
+``` docker build --target prod -t api:prod . ```
 
 - prod-distroless
 
-``` docker build --target prod-distroless -t my-app:prod-distroless . ```
+``` docker build --target prod-distroless -t api:prod-distroless . ```
+
+## Доказательство оптимизация
+
+``` docker image ls ```
+
+    IMAGE                 ID             DISK USAGE   CONTENT SIZE   EXTRA
+    api:dev               7857f5e164d8        776MB          151MB
+    api:prod              3a52b7675090        452MB         82.3MB
+    api:prod-distroless   fd2691632861        383MB         67.1MB
+
+Видно что prod-distroless занимает меньше всего места
 
 # Команды для Docker compose
 
-## prod
+## prod-like
 
 ``` docker compose -f compose.yml up --build ```
 
@@ -27,10 +38,10 @@
 
 ``` docker compose -f compose.yml -f compose.dev.yml up --build ```
 
-## Миграции
+## migrate
 
 ``` docker compose -f compose.yml run --rm migrate ```
 
-## Сиды
+## seed
 
 ``` docker compose -f compose.yml run --rm seed ```
