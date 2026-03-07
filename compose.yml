@@ -11,6 +11,8 @@ services:
       POSTGRES_DB: ${DB_NAME:-db}
     volumes:
       - db:/var/lib/postgresql/data
+    networks:
+      - internal
 
   minio:
     image: minio/minio:latest
@@ -54,6 +56,8 @@ services:
       - postgres
       - minio
       - rabbitmq
+    networks:
+      - internal
 
   migrate:
     profiles: ["tools"]
@@ -66,6 +70,8 @@ services:
     restart: "no"
     depends_on:
       - postgres
+    networks:
+      - internal
 
   seed:
     profiles: ["tools"]
@@ -78,12 +84,21 @@ services:
     restart: "no"
     depends_on:
       - postgres
+      - migrate
+    networks:
+      - internal
   
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: unless-stopped
+    networks:
+      - internal
 
 volumes:
   minio:
   db:
+
+networks:
+  internal:
+    driver: bridge
