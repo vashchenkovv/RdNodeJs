@@ -41,9 +41,10 @@ services:
         sleep 2;
       done; mc mb --ignore-existing local/${AWS_S3_BUCKET:?err}; mc anonymous set none local/${AWS_S3_BUCKET:?err}; echo 'minio bucket is ready'; "
 
-  my-app:
+  api:
     build:
       target: prod
+    container_name: api
     ports:
       - "8080:3000"
     restart: unless-stopped
@@ -52,6 +53,7 @@ services:
     depends_on:
       - postgres
       - minio
+      - rabbitmq
 
   migrate:
     profiles: ["tools"]
@@ -64,13 +66,23 @@ services:
     restart: "no"
     depends_on:
       - postgres
+
+  seed:
+    profiles: ["tools"]
+    build:
+      context: .
+      target: dev
+    env_file:
+      - .env.prod
+    command: npm run db:seed
+    restart: "no"
+    depends_on:
+      - postgres
   
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: unless-stopped
-    ports:
-      - '5673:5672'
 
 volumes:
   minio:

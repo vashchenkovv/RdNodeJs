@@ -265,10 +265,6 @@ const orderTpls = [
 ];
 
 async function seed(): Promise<void> {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('Seeding is disabled in production');
-  }
-
   await dataSource.initialize();
 
   const roleRepository = dataSource.getRepository(Role);

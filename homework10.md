@@ -33,4 +33,4 @@
 
 ## Сиды
 
-``` docker compose -f compose.yml -f compose.dev.yml run --rm seed ```
+``` docker compose -f compose.yml run --rm seed ```

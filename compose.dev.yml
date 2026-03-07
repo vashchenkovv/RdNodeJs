@@ -31,14 +31,14 @@ services:
     env_file:
       - .env.dev
 
-  my-app:
+  api:
     build:
       target: dev
     env_file:
       - .env.dev
     volumes:
       - ./src:/app/src
-      - ./node_modules:/app/node_modules
+      - node_modules:/app/node_modules
       - ./package.json:/app/package.json
       - ./package-lock.json:/app/package-lock.json
 
@@ -47,17 +47,15 @@ services:
       - .env.dev
 
   seed:
-    profiles: ["tools"]
-    build:
-      context: .
-      target: dev
     env_file:
       - .env.dev
-    command: npm run db:seed
-    restart: "no"
-    depends_on:
-      - postgres
 
   rabbitmq:
     ports:
-      - '15673:15672'
+      - '5672:5672'
+      - '15672:15672'
+      
+volumes:
+  minio:
+  db:
+  node_modules:
