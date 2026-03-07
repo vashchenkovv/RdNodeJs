@@ -10,11 +10,11 @@ npm i
 ```
 4) Run migrations:
 ```
-npm run migration:run
+npm run db:migrate
 ```
 5) Seed data:
 ```
-npm run seed
+npm run db:seed
 ```
 6) Start API:
 ```
